@@ -98,7 +98,7 @@ export default function Home() {
     }
   };
 
-  const sendMessage = async (overrideInput?: string) => {
+   const sendMessage = async (overrideInput?: string) => {
     const textToSubmit = overrideInput || input;
 
     // 1. معالجة الملفات الصوتية المحددة مسبقاً
@@ -178,11 +178,15 @@ export default function Home() {
       return;
     }
 
-    // 4. معالجة طلبات توليد الصور
+    // 4. 🔥 معالجة ذكية لطلبات توليد الصور (عبر التقاط الكلمات المفتاحية)
+    const textLower = textToSubmit.trim().toLowerCase();
     if (
-      textToSubmit.trim().includes("انشئ صورة") ||
-      textToSubmit.trim().includes("أنشئ صورة") ||
-      textToSubmit.trim().includes("صورة")
+      textLower.includes("انشئ") ||
+      textLower.includes("أنشئ") ||
+      textLower.includes("صورة") ||
+      textLower.includes("صوره") ||
+      textLower.includes("ولد") ||
+      textLower.includes("ارسم")
     ) {
       if (!overrideInput) {
         setMessages((prev) => [...prev, { role: "user", content: textToSubmit }]);
@@ -199,7 +203,14 @@ export default function Home() {
           body: formData,
         });
         const data = await response.json();
-        setMessages((prev) => [...prev, { role: "assistant", content: "تم إنشاء الصورة بنجاح!", image: data.image_url }]);
+        if (data.image_url) {
+          setMessages((prev) => [
+            ...prev, 
+            { role: "assistant", content: "🎨 تم توليد الصورة بنجاح بناءً على طلبك:", image: data.image_url }
+          ]);
+        } else {
+          setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ لم يتم استلام رابط الصورة بشكل صحيح." }]);
+        }
       } catch {
         setMessages((prev) => [...prev, { role: "assistant", content: "حدث خطأ أثناء إنشاء الصورة." }]);
       } finally {
@@ -208,7 +219,7 @@ export default function Home() {
       return;
     }
 
-    // 5. رسائل المحادثة العادية
+    // 5. رسائل المحادثة العادية والـ Chat الذكي (استقبال روابط الصور من دالة الشات العادية أيضاً)
     if (!textToSubmit.trim()) return;
     if (!overrideInput) {
       setMessages((prev) => [...prev, { role: "user", content: textToSubmit }]);
@@ -224,7 +235,16 @@ export default function Home() {
         body: JSON.stringify({ message: textToSubmit }),
       });
       const data = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+      
+      // ✨ التحديث البرمجي: لو دالة الـ /chat هي التي التقطت أمر التوليد ستعرض الصورة فوراً
+      setMessages((prev) => [
+        ...prev, 
+        { 
+          role: "assistant", 
+          content: data.response, 
+          image: data.image_url ? data.image_url : undefined 
+        }
+      ]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "حدث خطأ في اتصال السيرفر." }]);
     } finally {
