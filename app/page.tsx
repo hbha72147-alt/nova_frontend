@@ -30,7 +30,7 @@ export default function Home() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
 
-  const API_URL = "http://127.0.0.1:8000";
+  const API_URL = "https://fatttta123-nove-backend.hf.space";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,7 +98,7 @@ export default function Home() {
     }
   };
 
-   const sendMessage = async (overrideInput?: string) => {
+    const sendMessage = async (overrideInput?: string) => {
     const textToSubmit = overrideInput || input;
 
     // 1. معالجة الملفات الصوتية المحددة مسبقاً
@@ -205,8 +205,12 @@ export default function Home() {
         const data = await response.json();
         if (data.image_url) {
           setMessages((prev) => [
-            ...prev, 
-            { role: "assistant", content: "🎨 تم توليد الصورة بنجاح بناءً على طلبك:", image: data.image_url }
+             ...prev,
+              { 
+              role: "assistant", 
+              content: "🎨 تم توليد الصورة بنجاح بناءً على طلبك:", 
+              image: `${API_URL}${data.image_url}` // دمج الرابط هنا أيضاً
+            }
           ]);
         } else {
           setMessages((prev) => [...prev, { role: "assistant", content: "⚠️ لم يتم استلام رابط الصورة بشكل صحيح." }]);
@@ -234,23 +238,25 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: textToSubmit }),
       });
-      const data = await response.json();
+            const data = await response.json();
       
-      // ✨ التحديث البرمجي: لو دالة الـ /chat هي التي التقطت أمر التوليد ستعرض الصورة فوراً
+      // ✨ التعديل السحري والنهائي لعرض الصورة
       setMessages((prev) => [
         ...prev, 
         { 
           role: "assistant", 
           content: data.response, 
-          image: data.image_url ? data.image_url : undefined 
+          // دمج رابط السيرفر الخارجي مع مسار الصورة لكي تظهر فوراً
+          image: data.image_url ? `${API_URL}${data.image_url}` : undefined 
         }
       ]);
-    } catch {
+} catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "حدث خطأ في اتصال السيرفر." }]);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const toggleRecording = async () => {
     if (!isRecording) {
